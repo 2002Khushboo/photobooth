@@ -4,7 +4,13 @@ const CameraPreview = forwardRef((props, ref) => {
   const videoRef = ref || useRef(null);
 
   useEffect(() => {
+    console.log("CameraPreview mounted");
+  }, []);
+
+  useEffect(() => {
     async function startCamera() {
+      console.log("Camera stream started");
+
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {

@@ -1,8 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./styles/booth.css";
 import CameraPreview from "./components/CameraPreview";
 
 function App() {
+  const countdownRef = useRef(null);
+
   const TOTAL_PHOTOS =4;
   const COUNTDOWN_START =3;
 
@@ -13,7 +15,6 @@ function App() {
   const [count, setCount] = useState(COUNTDOWN_START);
   
   const [photos, setPhotos] = useState([]);
-  const [currentShot, setCurrentShot] = useState(0);
   const [isSessionActive, setIsSessionActive] = useState(false);
 
   const [photoStrip, setPhotoStrip] = useState(null);
@@ -31,9 +32,31 @@ function App() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const imageData = canvas.toDataURL("image/png");
-    setPhotos((prev) => [...prev, imageData]);
+    
+    return imageData; // 👈 IMPORTANT
+    //setPhotos((prev) => [...prev, imageData]);
     //setPhoto(imageData);
   };
+
+  useEffect(() => {
+    if (!isSessionActive) return;
+
+    if (photos.length === 0) {
+      startCountdown();
+    } 
+    else if (photos.length < TOTAL_PHOTOS) {
+      setTimeout(() => {
+        startCountdown();
+      }, 800);
+    } 
+    else {
+      setIsSessionActive(false);
+
+      setTimeout(() => {
+        createPhotoStrip(photos);
+      }, 300);
+    }
+  }, [photos.length]);
 
   const createPhotoStrip = async (images) => {
     const imgElements = await Promise.all(
@@ -92,43 +115,65 @@ function App() {
 
   const startSession = () => {
     setPhotos([]);
-    setCurrentShot(0);
     setIsSessionActive(true);
     startCountdown();
   };
 
   const startCountdown = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+
     setIsCounting(true);
     setCount(COUNTDOWN_START);
 
-    const interval = setInterval(() => {
-      setCount((prev) => {
+    countdownRef.current = setInterval(() => {
+      setCount(prev => {
         if (prev === 1) {
-          clearInterval(interval);
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+
           setIsCounting(false);
-          handleCapture();
-          return 0;
+
+          setTimeout(() => {
+            handleCapture();
+          }, 150);
+          return COUNTDOWN_START; // reset value safely
         }
+
         return prev - 1;
       });
     }, 1000);
   };
 
   const handleCapture = () => {
-    capturePhoto();
+    /*if (photos.length >= TOTAL_PHOTOS) return;
 
-    if (currentShot + 1 < TOTAL_PHOTOS) {
+    const imageData = capturePhoto();
+    const updatedPhotos = [...photos, imageData];
+
+    setPhotos(updatedPhotos);
+    
+    if (updatedPhotos.length < TOTAL_PHOTOS) {
       setTimeout(() => {
-        setCurrentShot((prev) => prev + 1);
         startCountdown();
       }, 800); // small breathing gap
     } else {
       setIsSessionActive(false);
 
       setTimeout(() => {
-        createPhotoStrip(photos.concat());
+        createPhotoStrip(updatedPhotos);
+        //createPhotoStrip([...photos]);
+        //createPhotoStrip(photos.concat());
       },300);
-    }
+    }*/
+    setPhotos(prev => {
+      if (prev.length >= TOTAL_PHOTOS) return prev;
+
+      const imageData = capturePhoto();
+      return [...prev, imageData];
+    });
   };
 
   return (
@@ -156,7 +201,7 @@ function App() {
 
           {!isCounting && isSessionActive && (
             <div className="shot-indicator">
-              {currentShot + 1} / {TOTAL_PHOTOS}
+              {photos.length} / {TOTAL_PHOTOS}
             </div>
           )}
 
