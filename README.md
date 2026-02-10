@@ -61,6 +61,7 @@ docs/LEARNINGS.md
 docs/BUGS_AND_FIXES.md
 
 ✨ Future Improvements
+
 Retake photo option
 
 Camera shutter animation & sound
