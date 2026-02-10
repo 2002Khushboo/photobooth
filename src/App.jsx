@@ -3,25 +3,32 @@ import "./styles/booth.css";
 import CameraPreview from "./components/CameraPreview";
 
 function App() {
-  const countdownRef = useRef(null);
-
   const TOTAL_PHOTOS =4;
   const COUNTDOWN_START =3;
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const countdownRef = useRef(null);
 
   const [isCounting, setIsCounting] = useState(false);
   const [count, setCount] = useState(COUNTDOWN_START);
-  
   const [photos, setPhotos] = useState([]);
   const [isSessionActive, setIsSessionActive] = useState(false);
-
   const [photoStrip, setPhotoStrip] = useState(null);
 
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
+
+    if (!video || video.videoWidth === 0) {
+      console.warn("[Capture] Video not ready");
+      return null;
+    }
+
+    console.log(
+      "[Capture] Capturing frame at time:",
+      video.currentTime.toFixed(2)
+    );
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -33,32 +40,74 @@ function App() {
 
     const imageData = canvas.toDataURL("image/png");
     
-    return imageData; // 👈 IMPORTANT
-    //setPhotos((prev) => [...prev, imageData]);
-    //setPhoto(imageData);
+    return imageData; 
+  };
+
+  const startCountdown = () => {
+    if (countdownRef.current) {
+      console.log("[Countdown] Already running, skipping");
+      return;
+    }
+
+    console.log("[Countdown] Starting");
+    setIsCounting(true);
+    setCount(COUNTDOWN_START);
+
+    countdownRef.current = setInterval(() => {
+      setCount(prev => {
+        console.log("[Countdown] Tick:", prev);
+
+        if (prev === 1) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+
+          setIsCounting(false);
+          handleCapture();
+          
+          return COUNTDOWN_START; // reset value safely
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleCapture = () => {
+    setPhotos(prev => {
+      if (prev.length >= TOTAL_PHOTOS) {
+        console.log("[Capture] Max photos reached");
+        return prev;
+      }
+
+      const imageData = capturePhoto();
+      if (!imageData) return prev;
+      console.log(
+        `[Capture] Photo ${prev.length + 1} captured`
+      );
+      return [...prev, imageData];
+    });
   };
 
   useEffect(() => {
     if (!isSessionActive) return;
-
-    if (photos.length === 0) {
-      startCountdown();
-    } 
-    else if (photos.length < TOTAL_PHOTOS) {
-      setTimeout(() => {
+    console.log(
+      `[Flow] photos.length = ${photos.length}`
+    );
+    if (photos.length < TOTAL_PHOTOS) {
         startCountdown();
-      }, 800);
     } 
-    else {
+    else 
+    {
+      console.log("[Flow] Session complete");
       setIsSessionActive(false);
-
       setTimeout(() => {
         createPhotoStrip(photos);
       }, 300);
     }
-  }, [photos.length]);
+  }, [photos.length, isSessionActive]);
 
   const createPhotoStrip = async (images) => {
+    console.log("[Strip] Creating photo strip");
     const imgElements = await Promise.all(
       images.map((src) => {
         return new Promise((resolve) => {
@@ -111,70 +160,23 @@ function App() {
 
     const stripImage = canvas.toDataURL("image/png");
     setPhotoStrip(stripImage);
+    console.log("[Strip] Photo strip ready");
   };
 
   const startSession = () => {
+    console.log("[Session] Starting new session");
     setPhotos([]);
+    setPhotoStrip(null);
     setIsSessionActive(true);
-    startCountdown();
   };
 
-  const startCountdown = () => {
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-
-    setIsCounting(true);
-    setCount(COUNTDOWN_START);
-
-    countdownRef.current = setInterval(() => {
-      setCount(prev => {
-        if (prev === 1) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
-
-          setIsCounting(false);
-
-          setTimeout(() => {
-            handleCapture();
-          }, 150);
-          return COUNTDOWN_START; // reset value safely
-        }
-
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleCapture = () => {
-    /*if (photos.length >= TOTAL_PHOTOS) return;
-
-    const imageData = capturePhoto();
-    const updatedPhotos = [...photos, imageData];
-
-    setPhotos(updatedPhotos);
-    
-    if (updatedPhotos.length < TOTAL_PHOTOS) {
-      setTimeout(() => {
-        startCountdown();
-      }, 800); // small breathing gap
-    } else {
-      setIsSessionActive(false);
-
-      setTimeout(() => {
-        createPhotoStrip(updatedPhotos);
-        //createPhotoStrip([...photos]);
-        //createPhotoStrip(photos.concat());
-      },300);
-    }*/
-    setPhotos(prev => {
-      if (prev.length >= TOTAL_PHOTOS) return prev;
-
-      const imageData = capturePhoto();
-      return [...prev, imageData];
-    });
-  };
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="booth">
@@ -182,20 +184,6 @@ function App() {
         <CameraPreview ref={videoRef} />
 
         <canvas ref={canvasRef} style={{ display: "none" }} />
-
-        {/*<div className="overlay">
-          {!isCounting && !photo && (
-            <div className="look-here">LOOK HERE 👀</div>
-          )}
-          {isCounting && <div className="countdown">{count}</div>}
-        </div>
-
-        {!isCounting && !photo && (
-          <button className="start-btn" onClick={startCountdown}>
-            START
-          </button>
-        )}*/}
-
         <div className="overlay">
           {isCounting && <div className="countdown">{count}</div>}
 
@@ -210,17 +198,11 @@ function App() {
           )}
         </div>
 
-        {!isSessionActive && photos.length === 0 && (
+        {!isSessionActive /*&& photos.length === 0 */ && (
           <button className="start-btn" onClick={startSession}>
             START
           </button>
         )}
-
-        {/*{photos && (
-          <div className="preview">
-            <img src={photos} alt="Captured" />
-          </div>
-        )}*/}
       </div>
       {photoStrip && (
         <div className="strip-preview">
