@@ -30,13 +30,14 @@ A web-based photobooth application built using **React + Vite** that:
 
 ## 📂 Project Structure
 
+```
 src/
 ├── components/
 │ └── CameraPreview.jsx
 ├── styles/
 │ └── booth.css
 └── App.jsx
-
+```
 
 ---
 
@@ -46,6 +47,7 @@ src/
 npm install
 npm run dev
 Then open the URL shown in the terminal.
+```
 
 ⚠️ Permissions
 This app requires camera access.
@@ -59,6 +61,7 @@ docs/LEARNINGS.md
 docs/BUGS_AND_FIXES.md
 
 ✨ Future Improvements
+
 Retake photo option
 
 Camera shutter animation & sound
