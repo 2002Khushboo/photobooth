@@ -15,6 +15,7 @@ function App() {
   const [photos, setPhotos] = useState([]);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [photoStrip, setPhotoStrip] = useState(null);
+  const [flash, setFlash] = useState(false);
 
   const capturePhoto = () => {
     const video = videoRef.current;
@@ -29,6 +30,9 @@ function App() {
       "[Capture] Capturing frame at time:",
       video.currentTime.toFixed(2)
     );
+
+    setFlash(true);
+    setTimeout(() => setFlash(false), 150);
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -179,7 +183,69 @@ function App() {
   }, []);
 
   return (
-    <div className="booth">
+     <div className="booth">
+    <div className="booth-frame">
+
+      {/* LEFT SIDE - CAMERA */}
+      <div className="camera-section">
+        <div className={`curtain ${isSessionActive ? "open" : ""}`}>
+          <div className="curtain-left" />
+          <div className="curtain-right" />
+        </div>
+        <CameraPreview ref={videoRef} />
+        {flash && <div className="flash" />}
+
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+
+        <div className="overlay">
+          {isCounting && <div className="countdown">{count}</div>}
+
+          {!isCounting && isSessionActive && (
+            <div className="shot-indicator">
+              {photos.length} / {TOTAL_PHOTOS}
+            </div>
+          )}
+
+          {!isSessionActive && photos.length === 0 && (
+            <div className="look-here">LOOK HERE 👀</div>
+          )}
+        </div>
+      </div>
+
+      {/* RIGHT SIDE - CONTROL PANEL */}
+      <div className="control-section">
+
+        <div className="print-slit" />
+
+        {!isSessionActive && photos.length === 0 && (
+          <button className="start-circle" onClick={startSession}>
+            START
+          </button>
+        )}
+        {photoStrip && (
+          <div className="strip-output">
+            <img src={photoStrip} alt="Photo Strip" />
+            <a
+            href={photoStrip}
+            download="photostrip.png"
+            className="download-btn"
+          >
+            DOWNLOAD
+          </a>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* STRIP OUTPUT 
+    {photoStrip && (
+      <div className="strip-output">
+        <img src={photoStrip} alt="Photo Strip" />
+      </div>
+    )}*/}
+  </div>
+);
+  {/*  <div className="booth">
       <div className="camera-area">
         <CameraPreview ref={videoRef} />
 
@@ -198,7 +264,8 @@ function App() {
           )}
         </div>
 
-        {!isSessionActive /*&& photos.length === 0 */ && (
+        {!isSessionActive //&& photos.length === 0 
+         && (
           <button className="start-btn" onClick={startSession}>
             START
           </button>
@@ -218,7 +285,55 @@ function App() {
         </div>
         )}
     </div>
-  );
+  );*/}
+    {/*<div className="booth">
+
+      {/* CAMERA SECTION }
+      <div className="camera-section">
+        <div className="camera-frame">
+          <CameraPreview ref={videoRef} />
+          <canvas ref={canvasRef} style={{ display: "none" }} />
+
+          <div className="overlay">
+            {isCounting && <div className="countdown">{count}</div>}
+
+            {!isCounting && isSessionActive && (
+              <div className="shot-indicator">
+                {photos.length} / {TOTAL_PHOTOS}
+              </div>
+            )}
+
+            {!isSessionActive && photos.length === 0 && (
+              <div className="look-here">LOOK HERE 👀</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* CONTROLS }
+      <div className="controls">
+        {!isSessionActive && (
+          <button className="start-btn" onClick={startSession}>
+            START
+          </button>
+        )}
+      </div>
+
+      {/* OUTPUT }
+      {photoStrip && (
+        <div className="output">
+          <img src={photoStrip} alt="Photo Strip" />
+          <a
+            href={photoStrip}
+            download="photostrip.png"
+            className="download-btn"
+          >
+            DOWNLOAD
+          </a>
+        </div>
+      )}
+    </div>
+  );*/}
 }
 
 export default App;
